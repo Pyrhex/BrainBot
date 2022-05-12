@@ -2,23 +2,18 @@ import asyncio
 import discord
 import time
 import random
+import rigCheck
+import requests
+from CryptoOrganizer import cryptoScraper
 from datetime import datetime
-from discord.ext import tasks, commands
+from discord.ext import tasks
 from datetime import time, timezone
 
 
 bot = discord.Bot()
 
-guildList=[928169465475133440, 159037207460577281]
+guildList=[928169465475133440, 159037207460577281, 913881236441821324]
 
-@tasks.loop(time=time(2, 0, tzinfo=timezone.utc)) 
-async def runCrypto():
-    try:
-        print("Running crypto scraper...")
-        exec(open("CryptoOrganizer/cryptoScraper.py").read())
-        print("File run successfully")
-    except:
-        print("File ran into an error")
 
 @bot.event
 async def on_ready():
@@ -26,10 +21,20 @@ async def on_ready():
     print(bot.user.name) 
     print(bot.user.id)
     print('------')
-    runCrypto.start()
+    # runCrypto.start()
 
 def is_me(m):
     return m.author == bot.user
+
+@bot.slash_command(name='shrek', description="Turns Brian's light green", guild_ids=guildList)
+async def shrek(ctx):
+    url = "https://maker.ifttt.com/trigger/shrek/json/with/key/daPGUbt90Z_TJKqQ_IaQPH"
+    requests.post(url)
+    await ctx.respond("You have turned Brian's light green.")
+
+@bot.slash_command(guild_ids=guildList)  # create a slash command for the supplied guilds
+async def hello(ctx):
+    await ctx.respond(f"Hello {ctx.author}!")
 
 @bot.slash_command(name='ping', description="Ping a user multiple times", guild_ids=guildList)
 async def ping(ctx, username, message="null"):
@@ -42,18 +47,17 @@ async def ping(ctx, username, message="null"):
     else:
         await ctx.respond("https://tenor.com/view/get-rekt-stewie-family-guy-gif-11461913")
 
-# @client.command()
-# async def coinflip(ctx):
-# 	result = ['Heads', 'Tails']
-# 	response = random.choice(result)
-# 	await ctx.send(response)
-
-# @client.command()
-# async def rolldice(ctx):
-# 	result = ['1', '2', '3', '4', '5', '6']
-# 	response = random.choice(result)
-# 	await ctx.send("You rolled a " + response)
-
+@bot.slash_command(name='rigs', description="fetches the current rigs and their current hashrates", guild_ids=guildList)
+async def rigs(ctx):
+    await ctx.defer()
+    if ctx.author.id == 188765438446927873:
+        embed=discord.Embed(title="Current Rigs", description="This is the rigs running and their current hashrate", color=0x00ff1e)
+        rigs = rigCheck.getRigs()
+        for key in rigs:
+            embed.add_field(name=key, value=rigs[key], inline=False)
+        await ctx.respond(embeds=[embed])
+    else:
+        await ctx.respond("You do not have permission to use this command!")
 
 @bot.slash_command(name='schedule', description="This will display Brian's current class schedule", guild_ids=guildList)
 async def schedule(ctx):
