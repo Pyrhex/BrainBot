@@ -4,7 +4,7 @@ import time
 import random
 import rigCheck
 import requests
-from CryptoOrganizer import cryptoScraper
+import os
 from datetime import datetime
 from discord.ext import tasks
 from datetime import time, timezone
@@ -25,12 +25,6 @@ async def on_ready():
 
 def is_me(m):
     return m.author == bot.user
-
-@bot.slash_command(name='shrek', description="Turns Brian's light green", guild_ids=guildList)
-async def shrek(ctx):
-    url = "https://maker.ifttt.com/trigger/shrek/json/with/key/daPGUbt90Z_TJKqQ_IaQPH"
-    requests.post(url)
-    await ctx.respond("You have turned Brian's light green.")
 
 @bot.slash_command(guild_ids=guildList)  # create a slash command for the supplied guilds
 async def hello(ctx):
@@ -73,6 +67,10 @@ async def schedule(ctx):
 async def clear(ctx, amount):
     await ctx.channel.purge(limit=int(amount))
     await ctx.channel.respond(content="Messages Removed")
+
+for filename in os.listdir("./Cogs"):
+    if filename.endswith(".py"):
+        bot.load_extension(f"Cogs.{filename[:-3]}")
 
 f = open("discordToken.txt", "r")
 key = f.readline().strip()
