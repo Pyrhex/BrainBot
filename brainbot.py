@@ -26,10 +26,6 @@ async def on_ready():
 def is_me(m):
     return m.author == bot.user
 
-@bot.slash_command(guild_ids=guildList)  # create a slash command for the supplied guilds
-async def hello(ctx):
-    await ctx.respond(f"Hello {ctx.author}!")
-
 @bot.slash_command(name='ping', description="Ping a user multiple times", guild_ids=guildList)
 async def ping(ctx, username, message="null"):
     if ctx.author.id != 184861751169384449:
@@ -67,6 +63,12 @@ async def schedule(ctx):
 async def clear(ctx, amount):
     await ctx.channel.purge(limit=int(amount))
     await ctx.channel.respond(content="Messages Removed")
+
+@bot.slash_comand(name="matchup", guild_ids=guildList)
+async def matchup(ctx, name):
+    
+
+
 
 for filename in os.listdir("./Cogs"):
     if filename.endswith(".py"):
