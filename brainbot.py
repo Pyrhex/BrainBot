@@ -64,12 +64,6 @@ async def clear(ctx, amount):
     await ctx.channel.purge(limit=int(amount))
     await ctx.channel.respond(content="Messages Removed")
 
-@bot.slash_comand(name="matchup", guild_ids=guildList)
-async def matchup(ctx, name):
-    
-
-
-
 for filename in os.listdir("./Cogs"):
     if filename.endswith(".py"):
         bot.load_extension(f"Cogs.{filename[:-3]}")
