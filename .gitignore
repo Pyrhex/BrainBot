@@ -3,3 +3,7 @@ cryptoKey.json
 
 # Discord token
 discordToken.txt
+
+# Python cache
+__pycache__
+.DS_Store
