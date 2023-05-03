@@ -7,17 +7,17 @@ import requests
 import warnings
 import base64
     
-invitationId = 0
-with open("/Applications/League of Legends.app/Contents/LoL/lockfile") as r:
-        lockfile = r.read().split(':')
-headers = {"Authorization" : "Basic " + str(base64.b64encode(bytes('riot:' + lockfile[3], 'utf-8')))[2:-1]}
-def request(method, endpoint, data=None):
-    return requests.request(method, "https://127.0.0.1:" + lockfile[2] + endpoint, verify = False, headers=headers, json=data)
+# invitationId = 0
+# with open("/Applications/League of Legends.app/Contents/LoL/lockfile") as r:
+#         lockfile = r.read().split(':')
+# headers = {"Authorization" : "Basic " + str(base64.b64encode(bytes('riot:' + lockfile[3], 'utf-8')))[2:-1]}
+# def request(method, endpoint, data=None):
+#     return requests.request(method, "https://127.0.0.1:" + lockfile[2] + endpoint, verify = False, headers=headers, json=data)
 
 class Invites(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.myLoop.start()
+        # self.myLoop.start()
     @tasks.loop(seconds = 10) # repeat after every 10 seconds
     async def myLoop(self):
         async def button_callback(interaction):
@@ -51,4 +51,5 @@ class Invites(commands.Cog):
         except:
             await ctx.respond("No invites")
 def setup(bot):
+    pass
     bot.add_cog(Invites(bot))
