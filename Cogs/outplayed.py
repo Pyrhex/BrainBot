@@ -35,8 +35,6 @@ def getVodsChannel(guild_id):
         file_data = json.load(file)
         for server in file_data["servers"]:
             if str(guild_id) in list(server.keys()):
-                print("yes")
-                print(server[str(guild_id)]['vods channel'])
                 return server[str(guild_id)]['vods channel']
         return None
 class Outplayed(commands.Cog):
