@@ -6,4 +6,5 @@ discordToken.txt
 
 # Python cache
 __pycache__
+Cogs/__pycache__
 .DS_Store
