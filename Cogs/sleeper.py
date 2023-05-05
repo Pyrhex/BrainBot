@@ -4,11 +4,15 @@ from discord.ext import commands
 from discord.commands import slash_command
 from sleeperpy import Leagues
 from discord.ui import View, Button
+from brainbot import guildList
+
+
 league_id = 911894191154827264
 players = requests.get("https://api.sleeper.app/v1/players/lcs")
 users = Leagues.get_users(league_id)
 rosters = Leagues.get_rosters(league_id)
 matchups = Leagues.get_matchups(league_id, 1)
+
 def ownerIdToName(owner_id):
     for i in users:
         if(i["user_id"] == owner_id):
@@ -51,7 +55,7 @@ class Sleeper(commands.Cog):
         self.bot = bot
 
 
-    @slash_command(name='matchup', description="Turns Brian's light green", guild_ids=[1065813802425262141])
+    @slash_command(name='matchup', description="Turns Brian's light green", guild_ids=guildList)
     async def matchup(self, ctx, username):
         button = Button(label="Refresh", style=discord.ButtonStyle.green)
         async def button_callback(interaction):

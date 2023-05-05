@@ -3,6 +3,8 @@ import discord
 from discord.ext import commands, tasks
 from discord.commands import slash_command
 from discord.ui import View, Button
+from brainbot import guildList
+
 import requests
 import warnings
 import base64
@@ -42,7 +44,7 @@ class Invites(commands.Cog):
     async def before_printer(self):
         print('waiting...')
         await self.bot.wait_until_ready()
-    @slash_command(name='accept', description="Accepts the first invite", guild_ids=[1065813802425262141])
+    @slash_command(name='accept', description="Accepts the first invite", guild_ids=guildList)
     async def accept(self, ctx):
         try:
             invitations = request("GET", "/lol-lobby/v2/received-invitations")
