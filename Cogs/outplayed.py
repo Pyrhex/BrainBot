@@ -28,7 +28,17 @@ def addToServerJson(server_dict):
         file.seek(0)
         # convert back to json.
         json.dump(file_data, file, indent=4)
-
+def getVodsChannel(guild_id):
+    json_file_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'data', 'servers.json'))
+    with open(json_file_path, 'r+') as file:
+        # First we load existing data into a dict.
+        file_data = json.load(file)
+        for server in file_data["servers"]:
+            if str(guild_id) in list(server.keys()):
+                print("yes")
+                print(server[str(guild_id)]['vods channel'])
+                return server[str(guild_id)]['vods channel']
+        return None
 class Outplayed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -43,8 +53,11 @@ class Outplayed(commands.Cog):
     async def on_message(self, message):
         
         user = message.author
+        if(message.author.bot):
+            return
         if user == self.bot.user:
             return  
+        
         if("https://outplayed.tv/media/" in message.content):
             link = message.content.split()[-1]
             caption =" ".join(message.content.split()[:-1])
@@ -53,7 +66,8 @@ class Outplayed(commands.Cog):
             embed.add_field(name="Caption", value=caption, inline=False)
             embed.set_thumbnail(url=str(user.display_avatar.url))
             #TODO get the channel from the json file
-            channel = self.bot.get_channel(980554422277013574)
+            
+            channel = self.bot.get_channel(getVodsChannel(message.guild.id))
             await channel.send(embed=embed)
             await channel.send(link)
             await message.delete()

@@ -1,0 +1,16 @@
+{
+    "servers": [
+        {
+            "928169465475133440": {
+                "server name": "Brain's Brian",
+                "vods channel": 980554422277013574
+            }
+        },
+        {
+            "928169465475133441": {
+                "server name": "Test2",
+                "vods channel": 980554422277013575
+            }
+        }
+    ]
+}
