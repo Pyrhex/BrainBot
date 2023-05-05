@@ -52,6 +52,7 @@ class Outplayed(commands.Cog):
             embed.add_field(name="User", value=user, inline=False)
             embed.add_field(name="Caption", value=caption, inline=False)
             embed.set_thumbnail(url=str(user.display_avatar.url))
+            #TODO get the channel from the json file
             channel = self.bot.get_channel(980554422277013574)
             await channel.send(embed=embed)
             await channel.send(link)
