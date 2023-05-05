@@ -13,7 +13,7 @@ intents = discord.Intents.all()
 intents.message_content = True
 bot = discord.Bot(intents=intents)
 
-guildList = [928169465475133440, 159037207460577281, 913881236441821324]
+guildList = [928169465475133440]
 
 @bot.event
 async def on_ready():
