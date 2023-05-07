@@ -24,7 +24,7 @@ class General(commands.Cog):
 
     @slash_command(name='schedule', description="This will display Brian's current class schedule", guild_ids=guildList)
     async def schedule(self, ctx):
-        embed=discord.Embed(title="Brian's School Schedule", description="This is the updated school schedule for Spring 2022", color=0x00ff1e)
+        embed=discord.Embed(title="Brian's School Schedule", description="This is the updated school schedule for Summer 2023", color=0x00ff1e)
         embed.add_field(name="Monday", value="No classes", inline=False)
         embed.add_field(name="Tuesday", value="No classes", inline=False)
         embed.add_field(name="Wednesday", value="11:30AM - 12:20PM", inline=True)
