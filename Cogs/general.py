@@ -30,12 +30,13 @@ class General(commands.Cog):
         embed.add_field(name="Wednesday", value="11:30AM - 12:20PM", inline=True)
         embed.add_field(name="Thursday", value="11:30AM - 2:00PM", inline=False)
         embed.add_field(name="Friday", value="10:30AM - 12:20PM", inline=True)
-        await ctx.respond(embeds=[embed])
+        await ctx.respond(ephemeral=True, embeds=[embed])
 
     @slash_command(name='clear', description='This will clear the number of messages specified', guild_ids=guildList)
-    async def clear(self, ctx, amount):
-        await ctx.channel.purge(limit=int(amount))
-        await ctx.channel.respond(content="Messages Removed")
+    async def clear(self, ctx, amount: int):
+        deleted = await ctx.channel.purge(limit=amount)
+        embed = discord.Embed(description=f"✅ Deleted {len(deleted)} messages.")
+        await ctx.respond(ephemeral=True, embed=embed)
 
 def setup(bot):
     bot.add_cog(General(bot))
