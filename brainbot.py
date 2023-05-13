@@ -37,9 +37,9 @@ def is_me(m):
 #     else:
 #         await ctx.respond("You do not have permission to use this command!")
 
-for filename in os.listdir("./Cogs"):
+for filename in os.listdir("./cogs"):
     if filename.endswith(".py"):
-        bot.load_extension(f"Cogs.{filename[:-3]}")
+        bot.load_extension(f"cogs.{filename[:-3]}")
 
 f = open("discordToken.txt", "r")
 key = f.readline().strip()
