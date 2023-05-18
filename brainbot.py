@@ -5,16 +5,27 @@ import random
 import rigCheck
 import requests
 import os
+import argparse
 from datetime import datetime
 from discord.ext import tasks
 from datetime import time, timezone
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--debug", help="debug mode", action=argparse.BooleanOptionalAction)
+args = parser.parse_args()
 
 intents = discord.Intents.all()
 intents.message_content = True
 bot = discord.Bot(intents=intents)
 
-guildList = [928169465475133440]
+if(args.debug == True):
+    guildList = [928169465475133440]
+    key = os.environ.get('DISCORD_TOKEN_DEBUG')
+else:
+    guildList = [928169465475133440, 159037207460577281]
+    key = os.environ.get('DISCORD_TOKEN')
 
+    
 @bot.event
 async def on_ready():
     print('Logged in as')
@@ -41,7 +52,7 @@ for filename in os.listdir("./cogs"):
     if filename.endswith(".py"):
         bot.load_extension(f"cogs.{filename[:-3]}")
 
-f = open("discordToken.txt", "r")
-key = f.readline().strip()
-f.close()
+# f = open("discordToken.txt", "r")
+# key = f.readline().strip()
+# f.close()
 bot.run(key)
