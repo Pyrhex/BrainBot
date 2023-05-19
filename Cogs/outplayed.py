@@ -4,6 +4,7 @@ import discord
 import time
 import asyncio
 import json
+import re
 from brainbot import guildList
 from discord.ext import commands
 from discord.commands import slash_command
@@ -49,7 +50,6 @@ class Outplayed(commands.Cog):
         await ctx.respond("Set vods channel to " + channel.mention)
     @commands.Cog.listener()
     async def on_message(self, message):
-        
         user = message.author
         if(message.author.bot):
             return
@@ -57,18 +57,20 @@ class Outplayed(commands.Cog):
             return  
         
         if("https://outplayed.tv/media/" in message.content):
-            link = message.content.split()[-1]
+            link = re.search("(?P<url>https?://[^\s]+)", message.content).group("url")
             caption =" ".join(message.content.split()[:-1])
             embed=discord.Embed(title="Outplayed.tv", url=link, color=0xFF5733)
             embed.add_field(name="User", value=user, inline=False)
             embed.add_field(name="Caption", value=caption, inline=False)
             embed.set_thumbnail(url=str(user.display_avatar.url))
             #TODO get the channel from the json file
-            
-            channel = self.bot.get_channel(getVodsChannel(message.guild.id))
-            await channel.send(embed=embed)
-            await channel.send(link)
-            await message.delete()
+            try:
+                channel = self.bot.get_channel(getVodsChannel(message.guild.id))
+                await channel.send(embed=embed)
+                await channel.send(link)
+                await message.delete()
+            except:
+                await message.channel.send("An error has occurred")
         
 
 def setup(bot):
