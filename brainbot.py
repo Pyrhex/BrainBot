@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 intents = discord.Intents.all()
 intents.message_content = True
-bot = discord.Bot(intents=intents)
+bot = discord.Bot(intents=intents, activity=discord.Activity(type=discord.ActivityType.listening, name="to your convos"))
 
 if(args.debug == True):
     guildList = [928169465475133440]
