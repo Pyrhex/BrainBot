@@ -19,7 +19,6 @@ def addToServerJson(server_dict):
         for i, server in enumerate(file_data["servers"]):
             if server.keys() == server_dict.keys():
                 if server != server_dict:
-                    print("entered")
                     file_data["servers"][i][list(server.keys())[0]]['vods channel'] = server_dict[list(server_dict.keys())[0]]['vods channel']
                 break
         else: 

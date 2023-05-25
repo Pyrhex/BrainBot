@@ -39,6 +39,6 @@ class BirthdayReminders(commands.Cog):
         #         if(birthday.month == today.month and birthday.day == today.day):
         #             print("It's " + i["name"] + "'s birthday today!")
         #             return
-        print("hi")
+        pass
 def setup(bot):
     bot.add_cog(BirthdayReminders(bot))

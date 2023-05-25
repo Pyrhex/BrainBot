@@ -2,7 +2,7 @@ import asyncio
 import discord
 import time
 import random
-import rigCheck
+# import rigCheck
 import requests
 import os
 import argparse
