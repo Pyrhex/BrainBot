@@ -6,6 +6,8 @@ import random
 import requests
 import os
 import argparse
+import mysql.connector
+
 from datetime import datetime
 from discord.ext import tasks
 from datetime import time, timezone
@@ -13,6 +15,13 @@ from datetime import time, timezone
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--debug", help="debug mode", action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
+
+mydb = mysql.connector.connect(
+    host = os.environ.get('SQL_HOST'),
+    user = os.environ.get('SQL_USER'),
+    password = os.environ.get('SQL_PASS')
+)
+cursor = mydb.cursor()
 
 intents = discord.Intents.all()
 intents.message_content = True
