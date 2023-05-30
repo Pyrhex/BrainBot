@@ -3,7 +3,9 @@ import datetime
 import os
 import json
 import discord
-from brainbot import guildList, cursor
+import mysql.connector
+
+from brainbot import guildList
 from discord.ext import commands, tasks
 from discord.ext import commands
 from discord.commands import slash_command
@@ -33,6 +35,12 @@ class BirthdayReminders(commands.Cog):
     #TODO add new function so you can set a dedicated birthday channel instead of hardcoding it
     @tasks.loop(time=datetime.time(hour=16, minute=0, second=0, tzinfo=datetime.timezone.utc))
     async def reminders(self):
+        mydb = mysql.connector.connect(
+            host = os.environ.get('SQL_HOST'),
+            user = os.environ.get('SQL_USER'),
+            password = os.environ.get('SQL_PASS')
+        )
+        cursor = mydb.cursor()
         today = date.today()
         cursor.execute("USE brainbot")
         cursor.execute(f"SELECT name FROM birthdays where month = {today.month} and day = {today.day}")
@@ -40,7 +48,7 @@ class BirthdayReminders(commands.Cog):
         for [i] in row:
             embed=discord.Embed(title=f"It's {i}'s birthday today!", color=discord.Color.green())
             await self.bot.get_channel(1111494799267209286).send(embed=embed)
-
+        mydb.close()
     @reminders.before_loop
     async def before_reminder(self):
         print('waiting...')
