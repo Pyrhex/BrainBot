@@ -42,7 +42,7 @@ class Outplayed(commands.Cog):
         self.bot = bot
 
     @slash_command(name='vods', description="Sets the vod/clips channel", guild_ids=guildList)
-    async def vods(self, ctx, channel: discord.TextChannel):
+    async def vods(self, ctx, channel: discord.ForumChannel | discord.TextChannel):
         server = {str(ctx.guild.id) : {"server name": ctx.guild.name, "vods channel": channel.id}}
         addToServerJson(server)
 
@@ -57,6 +57,7 @@ class Outplayed(commands.Cog):
         
         if("https://outplayed.tv/media/" in message.content):
             link = re.search("(?P<url>https?://[^\s]+)", message.content).group("url")
+            print(link)
             caption =" ".join(message.content.split()[:-1])
             embed=discord.Embed(title="Outplayed.tv", url=link, color=0xFF5733)
             embed.add_field(name="User", value=user, inline=False)
@@ -65,11 +66,15 @@ class Outplayed(commands.Cog):
             #TODO get the channel from the json file
             try:
                 channel = self.bot.get_channel(getVodsChannel(message.guild.id))
-                await channel.send(embed=embed)
-                await channel.send(link)
+                if(channel.type == discord.enums.ChannelType.forum):
+                    thread = await channel.create_thread(name=f"{message.author.nick}'s Outplayed Clip",auto_archive_duration=60, embed=embed)
+                    await thread.send(content=link)
+                else:
+                    await channel.send(embed=embed)
+                    await channel.send(link)
                 await message.delete()
-            except:
-                await message.channel.send("An error has occurred")
+            except Exception as e:
+                await message.channel.send(e)
         
 
 def setup(bot):
