@@ -1,7 +1,6 @@
 import os
 import discord
 import time
-import asyncio
 import re
 import mysql.connector
 from brainbot import guildList
@@ -41,7 +40,7 @@ class Outplayed(commands.Cog):
     async def vods(self, ctx, channel: discord.ForumChannel | discord.TextChannel):
         addToDatabase(ctx.guild, channel)
         await ctx.respond("Set vods channel to " + channel.mention)
-        
+
     @commands.Cog.listener()
     async def on_message(self, message):
         user = message.author
@@ -49,7 +48,6 @@ class Outplayed(commands.Cog):
             return
         if user == self.bot.user:
             return  
-        
         if("https://outplayed.tv/media/" in message.content):
             link = re.search("(?P<url>https?://[^\s]+)", message.content).group("url")
             caption =" ".join(message.content.split()[:-1])
@@ -72,7 +70,6 @@ class Outplayed(commands.Cog):
             except Exception as e:
                 embed=discord.Embed(title=f'An error has occurred: {e}', color=0xFF5733)
                 await message.channel.send(embed=embed)
-        
-
+    
 def setup(bot):
     bot.add_cog(Outplayed(bot))

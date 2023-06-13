@@ -15,8 +15,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--debug", help="debug mode", action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
-
-
 intents = discord.Intents.all()
 intents.message_content = True
 bot = discord.Bot(intents=intents, activity=discord.Activity(type=discord.ActivityType.listening, name="to your convos"))
@@ -39,6 +37,14 @@ async def on_ready():
 def is_me(m):
     return m.author == bot.user
 
+@bot.slash_command(name='reload', description='This will reload the cog', guild_ids=guildList)
+async def reload(self, ctx, cog_name):
+    try:
+        self.bot.reload_extension(f"cogs.{cog_name}")
+        await ctx.respond(f"{cog_name} cog has been reloaded", ephemeral=True)
+    except Exception as e:
+        await ctx.respond(f"Error reloading {cog_name}: {e}", ephemeral=True)
+        
 # @bot.slash_command(name='rigs', description="fetches the current rigs and their current hashrates", guild_ids=guildList)
 # async def rigs(ctx):
 #     await ctx.defer()

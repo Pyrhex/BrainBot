@@ -1,11 +1,10 @@
-import os
-import requests
 import discord
-import time
 import asyncio
+
 from brainbot import guildList
 from discord.ext import commands
 from discord.commands import slash_command
+from dadjokes import Dadjoke
 
 
 class General(commands.Cog):
@@ -37,6 +36,19 @@ class General(commands.Cog):
         deleted = await ctx.channel.purge(limit=amount)
         embed = discord.Embed(description=f"✅ Deleted {len(deleted)} messages.")
         await ctx.respond(ephemeral=True, embed=embed)
+
+    @slash_command(name="dadjoke", description="This will display a random dad joke", guild_ids=guildList)
+    async def dadjoke(self, ctx):
+        dadjoke = Dadjoke()
+        await ctx.respond(dadjoke.joke)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        else:
+            # cursor.execute(f"""REPLACE INTO server (user_id, username, level, xp, xp_to_next_level) VALUES(%s, %s, %s, %s, %s);""", (message.author.id, message.author.name, vods_channel.id, vods_channel.name))
+            pass
 
 def setup(bot):
     bot.add_cog(General(bot))
