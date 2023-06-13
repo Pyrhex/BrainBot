@@ -23,7 +23,7 @@ if(args.debug == True):
     guildList = [928169465475133440]
     key = os.environ.get('DISCORD_TOKEN_DEBUG')
 else:
-    guildList = [928169465475133440, 159037207460577281]
+    guildList = [928169465475133440, 159037207460577281,913881236441821324]
     key = os.environ.get('DISCORD_TOKEN')
 
     
@@ -44,7 +44,7 @@ async def reload(self, ctx, cog_name):
         await ctx.respond(f"{cog_name} cog has been reloaded", ephemeral=True)
     except Exception as e:
         await ctx.respond(f"Error reloading {cog_name}: {e}", ephemeral=True)
-        
+
 # @bot.slash_command(name='rigs', description="fetches the current rigs and their current hashrates", guild_ids=guildList)
 # async def rigs(ctx):
 #     await ctx.defer()
