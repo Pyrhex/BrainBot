@@ -1,5 +1,8 @@
 import discord
 import asyncio
+import os
+import mysql.connector
+import math
 
 from brainbot import guildList
 from discord.ext import commands
@@ -47,8 +50,32 @@ class General(commands.Cog):
         if message.author.bot:
             return
         else:
+            mydb = mysql.connector.connect(
+            host = os.environ.get('SQL_HOST'),
+            user = os.environ.get('SQL_USER'),
+            password = os.environ.get('SQL_PASS')
+            )
+            cursor = mydb.cursor()
+            cursor.execute("USE brainbot")
+            cursor.execute(f"""INSERT IGNORE INTO user(user_id, username, level, xp, xp_to_next_level) VALUES (%s, %s, 0, 0, 5)""", (message.author.id, message.author.name,))
+            # insert into table if user doesn't exist
+            cursor.execute(f"""UPDATE user SET xp = xp + 1 WHERE username = %s""", (message.author.name,))
+            cursor.execute(f"""SELECT xp, xp_to_next_level, level FROM user WHERE username = %s""", (message.author.name,))
+            row = cursor.fetchone()
+            xp = row[0]
+            xp_to_next_level = row[1]
+            level = row[2]
+            # addXP()
+            if(xp >= xp_to_next_level):
+                level = level + 1
+                xp = xp - xp_to_next_level
+                xp_to_next_level = math.ceil(xp_to_next_level * 1.2)
+                embed = discord.Embed(title=f":tada: Congrats! {message.author.display_name} is now level {level}. :tada:", color=5763719)
+                await message.channel.send(embed=embed)
+            cursor.execute(f"""UPDATE user SET xp = %s, xp_to_next_level = %s, level = %s WHERE username = %s""", (xp, xp_to_next_level, level, message.author.name,))
             # cursor.execute(f"""REPLACE INTO server (user_id, username, level, xp, xp_to_next_level) VALUES(%s, %s, %s, %s, %s);""", (message.author.id, message.author.name, vods_channel.id, vods_channel.name))
-            pass
+            mydb.commit()
+            mydb.close()
 
 def setup(bot):
     bot.add_cog(General(bot))
