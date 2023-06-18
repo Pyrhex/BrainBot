@@ -1,7 +1,8 @@
-discord.py==2.2.3
+py-cord
 natsort==8.2.0
 requests==2.28.1
 selenium==4.9.1
 sleeper_py==1.0.0
 webdriver_manager==3.8.4
 yt_dlp==2023.3.4
+mysql-connector-python

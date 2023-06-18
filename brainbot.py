@@ -6,10 +6,17 @@ import random
 import requests
 import os
 import argparse
+import logging
 
 from datetime import datetime
 from discord.ext import tasks
 from datetime import time, timezone
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--debug", help="debug mode", action=argparse.BooleanOptionalAction)
@@ -25,7 +32,6 @@ if(args.debug == True):
 else:
     guildList = [928169465475133440, 159037207460577281,913881236441821324]
     key = os.environ.get('DISCORD_TOKEN')
-
     
 @bot.event
 async def on_ready():
@@ -61,7 +67,4 @@ for filename in os.listdir("./cogs"):
     if filename.endswith(".py"):
         bot.load_extension(f"cogs.{filename[:-3]}")
 
-# f = open("discordToken.txt", "r")
-# key = f.readline().strip()
-# f.close()
 bot.run(key)
