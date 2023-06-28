@@ -55,9 +55,9 @@ class Earnest(commands.Cog):
         current = datetime.datetime.now()
         vegan.set_footer(text=f"Updated at: {current}")
         await ctx.respond(embeds=[regular, vegan])
-    @tasks.loop(time=datetime.time(hour=19, minute=0, second=0, tzinfo=datetime.timezone.utc))
-    async def reminders(self, ctx):
-        await ctx.defer()
+    @tasks.loop(time=datetime.time(hour=22, minute=30, second=0, tzinfo=datetime.timezone.utc))
+    async def reminders(self):
+        # await ctx.defer()
         flavours = getFlavours()
         regular=discord.Embed(title="Earnest Ice Cream", description="Regular Flavours", color=0xFF5733)
         vegan=discord.Embed(title="", description="Vegan Flavours", color=0x00FF00)
@@ -71,9 +71,10 @@ class Earnest(commands.Cog):
         # get ice cream channel
         channel = self.bot.get_channel(getIcecreamChannel(913881236441821324))
         await channel.send(embeds=[regular, vegan])
+
     @reminders.before_loop
     async def before_reminder(self):
-        print('waiting...')
+        print(f'Starting up Earnest Ice Cream reminders...')
         await self.bot.wait_until_ready()
 def setup(bot):
     bot.add_cog(Earnest(bot))
