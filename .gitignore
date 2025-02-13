@@ -11,3 +11,15 @@ cogs/__pycache__
 
 # Logs
 *.log
+
+# venv
+venv
+
+# testing code
+test.py
+schedule.xlsx 
+
+# tokens
+credentials.json
+token.json
+service_account_key.json

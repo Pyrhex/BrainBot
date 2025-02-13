@@ -48,7 +48,8 @@ class Outplayed(commands.Cog):
             return
         if user == self.bot.user:
             return  
-        if("https://outplayed.tv/media/" in message.content):
+        if("https://outplayed.tv/" in message.content):
+            print("Moving to correct channel")
             link = re.search("(?P<url>https?://[^\s]+)", message.content).group("url")
             caption =" ".join(message.content.split()[:-1])
             if(caption == ""):

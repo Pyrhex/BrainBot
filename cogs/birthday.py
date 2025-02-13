@@ -33,7 +33,7 @@ class BirthdayReminders(commands.Cog):
     #                 return
 
     #TODO add new function so you can set a dedicated birthday channel instead of hardcoding it
-    @tasks.loop(time=datetime.time(hour=16, minute=0, second=0, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=datetime.time(hour=7, minute=1, second=0, tzinfo=datetime.timezone.utc))
     async def reminders(self):
         mydb = mysql.connector.connect(
             host = os.environ.get('SQL_HOST'),
