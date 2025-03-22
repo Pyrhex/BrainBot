@@ -39,6 +39,29 @@ from googleapiclient.errors import HttpError
 
 # Vancouver time zone
 vancouver_tz = pytz.timezone('America/Vancouver')
+names = ["Brian", "Maria*", "Emilyn*", "Ryan*", "Jordan", "Cindy*", "KC", "Jojo*", "Christian*", "Troy*", "Tristan*", "Ian"]
+color_codes = {
+    "Brian": 1,
+    "Maria*": 2,
+    "Emilyn*": 10,
+    "Ryan*": 4,
+    "Jordan": 5,
+    "Cindy*": 6,
+    "KC": 7,
+    "Jojo*": 8,
+    "Christian*": 9,
+    "Troy*": 3,
+    "Tristan*": 11,
+    "Ian": 1,
+    "Work": 6
+
+}
+
+def remove_end_star(name: str) -> str:
+    # Check if the string ends with '*', and remove it if it does
+    if name.endswith('*'):
+        return name[:-1]  # Remove the last character (which is '*')
+    return name  # Return the original name if it doesn't end with '*'
 
 # Helper function to convert 12-hour format to 24-hour format
 def convert_to_24_hour(time_str):
@@ -86,7 +109,7 @@ def extract_initial_time(datetime_list):
     return result
 
 # Google Calendar upload function
-def upload_to_google_calendar(event_times):
+def upload_to_google_calendar(event_times, name):
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
     creds = None
     
@@ -119,26 +142,45 @@ def upload_to_google_calendar(event_times):
         # Avoid adding duplicate events
         for event_start_time in event_times:
             if event_start_time not in existing_event_times:
+                # Calculate the initial end time (8 hours after start)
+                event_end_time = event_start_time + datetime.timedelta(hours=8)
+
+                # Check if the event spans past midnight
+                # If the event ends after midnight, cut it off at midnight
+                if event_end_time.date() > event_start_time.date():
+                    event_end_time = event_start_time.replace(hour=23, minute=59, second=59, microsecond=0)
+
                 event = {
-                    'summary': 'Work',
+                    'summary': remove_end_star(name),
                     'location': '9351 Bridgeport Rd, Richmond, BC V6X 1S3',
                     'start': {
                         'dateTime': event_start_time.isoformat(),
                         'timeZone': 'America/Vancouver',
                     },
                     'end': {
-                        'dateTime': (event_start_time + datetime.timedelta(hours=8)).isoformat(),
+                        'dateTime': event_end_time.isoformat(),
                         'timeZone': 'America/Vancouver',
                     },
-                    'reminders': {
+                    'colorId': color_codes[name]
+                }
+
+                # If the event name is "Work", add reminders (notifications)
+                if name == "Work":
+                    event['reminders'] = {
                         'useDefault': False,
                         'overrides': [
-                            {'method': 'popup', 'minutes': 24 * 60},
-                            {'method': 'popup', 'minutes': 60},
-                        ],
-                    },
-                }
-                event = service.events().insert(calendarId='primary', body=event).execute()
+                            {'method': 'popup', 'minutes': 24 * 60},  # 1 day before
+                            {'method': 'popup', 'minutes': 60},      # 1 hour before
+                        ]
+                    }
+                    # Create event with notifications for "Work"
+                    cal_id = "primary"
+                else:
+                    # No reminders for other events
+                    cal_id = '24bc1af315ebd0c137d1172c5dba504e0f9bc6f6236d833b7c432b19c26dc909@group.calendar.google.com'
+                    
+                # Create the event (with or without reminders based on the event name)
+                event = service.events().insert(calendarId=cal_id, body=event).execute()
                 print(f"Event created: {event.get('htmlLink')}")
             else:
                 print(f"Event already exists: {event_start_time.isoformat()}")
@@ -156,48 +198,83 @@ class WorkScheduler(commands.Cog):
     description="A file to attach to the message",
     required=False,  # The default value will be None if the user doesn't provide a file.
 )
-    async def upload(self, ctx, attachment:discord.Attachment):
+    async def upload(self, ctx, attachment:discord.Attachment, name="Brian"):
         if attachment:
             # Responding with the file URL
-            await ctx.respond(f"Received your file: {attachment.url}")
+            await ctx.defer()
             response = requests.get(attachment.url)
             with open('schedule.xlsx', 'wb') as f:
                 f.write(response.content)
+            if name != "Brian":
+                for name in names:
+                    # Step 1: Read the Excel file, skipping the first 2 rows
+                    sched = pd.read_excel('schedule.xlsx', skiprows=2)
 
-            # Step 1: Read the Excel file, skipping the first 2 rows
-            sched = pd.read_excel('schedule.xlsx', skiprows=2)
+                    # Step 2: Drop the first three columns
+                    sched = sched.iloc[:, 3:]
 
-            # Step 2: Drop the first three columns
-            sched = sched.iloc[:, 3:]
+                    # Step 3: Remove empty columns
+                    sched = sched.dropna(axis=1, how='all')
 
-            # Step 3: Remove empty columns
-            sched = sched.dropna(axis=1, how='all')
+                    # Step 4: Drop the first row
+                    sched = sched.iloc[1:].reset_index(drop=True)
 
-            # Step 4: Drop the first row
-            sched = sched.iloc[1:].reset_index(drop=True)
+                    # Convert column names from numeric format to dates
+                    columns = sched.columns[1:].tolist()
+                    sched.columns = ['Name'] + columns
 
-            # Convert column names from numeric format to dates
-            columns = sched.columns[1:].tolist()
-            sched.columns = ['Name'] + columns
+                    # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
+                    sched_filtered = sched[sched['Name'].str.contains(name, case=False, na=False)]
+                    tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
+                    times = list(tuples[0][1:-1])
 
-            # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
-            sched_filtered = sched[sched['Name'].str.contains('BRIAN', case=False, na=False)]
-            tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
-            times = list(tuples[0][1:-1])
+                    # Extract working times from the schedule
+                    working_times = []
+                    for i in times:
+                        if i[1] == '-' or "REQ" in i[1] or "No" in i[1] or "OFF" in i[1]:
+                            continue
+                        else:
+                            working_times.append((i[0], i[1]))
 
-            # Extract working times from the schedule
-            working_times = []
-            for i in times:
-                if i[1] == '-' or "REQ" in i[1]:
-                    continue
-                else:
-                    working_times.append((i[0], i[1]))
+                    # Extract initial times in the correct time zone
+                    event_times = extract_initial_time(working_times)
+                    # Upload the events to Google Calendar
+                    upload_to_google_calendar(event_times, name)
+            else:
+                # Step 1: Read the Excel file, skipping the first 2 rows
+                sched = pd.read_excel('schedule.xlsx', skiprows=2)
 
-            # Extract initial times in the correct time zone
-            event_times = extract_initial_time(working_times)
+                # Step 2: Drop the first three columns
+                sched = sched.iloc[:, 3:]
 
-            # Upload the events to Google Calendar
-            upload_to_google_calendar(event_times)
+                # Step 3: Remove empty columns
+                sched = sched.dropna(axis=1, how='all')
+
+                # Step 4: Drop the first row
+                sched = sched.iloc[1:].reset_index(drop=True)
+
+                # Convert column names from numeric format to dates
+                columns = sched.columns[1:].tolist()
+                sched.columns = ['Name'] + columns
+
+                # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
+                sched_filtered = sched[sched['Name'].str.contains('Brian', case=False, na=False)]
+                tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
+                times = list(tuples[0][1:-1])
+
+                    # Extract working times from the schedule
+                working_times = []
+                for i in times:
+                    if i[1] == '-' or "REQ" in i[1] or "No" in i[1] or "OFF" in i[1]:
+                        continue
+                    else:
+                        working_times.append((i[0], i[1]))
+
+                    # Extract initial times in the correct time zone
+                event_times = extract_initial_time(working_times)
+                upload_to_google_calendar(event_times, "Work")
+            await ctx.respond(f"Received your file: {attachment.url}")
+
         else:
             await ctx.respond("You didn't give me a file to upload! :sob:")
 
