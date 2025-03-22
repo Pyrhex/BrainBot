@@ -224,7 +224,7 @@ class WorkScheduler(commands.Cog):
                     sched.columns = ['Name'] + columns
 
                     # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
-                    sched_filtered = sched[sched['Name'].str.contains(name, case=False, na=False)]
+                    sched_filtered = sched[sched['Name'].str.strip().str.lower() == person_name.lower()]
                     tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
                     times = list(tuples[0][1:-1])
 
