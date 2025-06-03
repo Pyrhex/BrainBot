@@ -44,7 +44,7 @@ def is_me(m):
     return m.author == bot.user
 
 @bot.slash_command(name='reload', description='This will reload the cog', guild_ids=guildList)
-async def reload(self, ctx, cog_name):
+async def reload(self, cog_name):
     try:
         self.bot.reload_extension(f"cogs.{cog_name}")
         await ctx.respond(f"{cog_name} cog has been reloaded", ephemeral=True)

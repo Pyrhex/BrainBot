@@ -34,7 +34,7 @@ class Labubu(commands.Cog):
 
         # Open the webpage
         try:
-            driver.get("https://www.popmart.com/ca/products/2084/THE-MONSTERS-COCA-COLA-SERIES-Vinyl-Face-Blind-Box")  # Replace with the actual URL of the page
+            driver.get("https://www.popmart.com/ca/products/2710/THE-MONSTERS-Big-into-Energy-Series-Vinyl-Plush-Pendant-Blind-Box")  # Replace with the actual URL of the page
 
         # Wait for the page to load (optional, you can adjust the time as needed)
             driver.implicitly_wait(10)  # Waits for up to 10 seconds

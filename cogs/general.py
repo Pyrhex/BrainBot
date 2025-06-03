@@ -35,11 +35,13 @@ class General(commands.Cog):
         await ctx.respond(ephemeral=True, embeds=[embed])
 
     @slash_command(name='clear', description='This will clear the number of messages specified', guild_ids=guildList)
-    async def clear(self, ctx, amount: int):
+    async def clear(self, ctx: discord.ApplicationContext, amount: int):
+        print("Clear command triggered")
+
+        await ctx.defer(ephemeral=True)
         deleted = await ctx.channel.purge(limit=amount)
         embed = discord.Embed(description=f"✅ Deleted {len(deleted)} messages.")
-        await ctx.respond(ephemeral=True, embed=embed)
-
+        await ctx.followup.send(embed=embed, ephemeral=True)
     @slash_command(name="dadjoke", description="This will display a random dad joke", guild_ids=guildList)
     async def dadjoke(self, ctx):
         dadjoke = Dadjoke()

@@ -1,103 +1,59 @@
 import discord
-import asyncio
+import requests
+import datetime
 import os
-import math
-import requests
-import datetime
-import os.path
-import pandas as pd
-import numpy as np
 import re
-import pytz  # You can also use zoneinfo in Python 3.9+
-
-from pytz import timezone
-from brainbot import guildList
-from discord.ext import commands
-from discord.commands import slash_command
-from discord import option
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-
-import datetime
-import os.path
-import pytz
-import requests
 import pandas as pd
-import numpy as np
+import pytz
+import traceback
+
 from discord.ext import commands
 from discord.commands import slash_command
 from discord import option
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# Vancouver time zone
 vancouver_tz = pytz.timezone('America/Vancouver')
-names = ["Brian", "Maria*", "Emilyn*", "Ryan*", "Jordan", "Cindy*", "KC", "Jojo*", "Christian*", "Troy*", "Tristan*", "Ian"]
+
+names = ["Brian*", "Abdi*", "Emilyn*", "Ryan*", "Jordan", "Cindy*", "KC*", "Jojo*", "Christian*", "Troy*", "Tristan*", "Ian", "Sara"]
 color_codes = {
-    "Brian": 1,
-    "Maria*": 2,
+    "Brian*": 1,
+    "Abdi*": 2,
     "Emilyn*": 10,
     "Ryan*": 4,
     "Jordan": 5,
     "Cindy*": 6,
-    "KC": 7,
+    "KC*": 7,
     "Jojo*": 8,
     "Christian*": 9,
     "Troy*": 3,
     "Tristan*": 11,
     "Ian": 1,
-    "Work": 6
-
+    "Work": 6,
+    "Sara": 1
 }
 
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
+
 def remove_end_star(name: str) -> str:
-    # Check if the string ends with '*', and remove it if it does
-    if name.endswith('*'):
-        return name[:-1]  # Remove the last character (which is '*')
-    return name  # Return the original name if it doesn't end with '*'
+    return name[:-1] if name.endswith('*') else name
 
-# Helper function to convert 12-hour format to 24-hour format
 def convert_to_24_hour(time_str):
-    try:
-        # Strip whitespace and separate the time part and period
-        time_str = time_str.strip()
-        period = time_str[-2:].upper()  # Extract and normalize AM/PM
-        time_part = time_str[:-2].strip()  # Extract the time part
-        
-        if period not in {"AM", "PM"}:
-            raise ValueError("Invalid period. Must be 'AM' or 'PM'.")
-        
-        # Split the time part into hour and minute if ':' is present
-        if ':' in time_part:
-            hour, minute = map(int, time_part.split(':'))
-        else:
-            hour = int(time_part)  # Handle cases like "6AM"
-            minute = 0  # Default minute is 0
-        
-        # Validate hour and minute ranges
-        if not (0 <= hour <= 12 and 0 <= minute < 60):
-            raise ValueError("Invalid time values.")
-        
-        # Convert to 24-hour format
-        if period == "PM" and hour != 12:
-            hour += 12
-        elif period == "AM" and hour == 12:
-            hour = 0
-        
-        return hour, minute
-    
-    except Exception as e:
-        # Handle any parsing or value errors
-        raise ValueError(f"Error processing time string '{time_str}': {e}")
+    time_str = time_str.strip()
+    period = time_str[-2:].upper()
+    time_part = time_str[:-2].strip()
+    if ':' in time_part:
+        hour, minute = map(int, time_part.split(':'))
+    else:
+        hour, minute = int(time_part), 0
+    if period == "PM" and hour != 12:
+        hour += 12
+    elif period == "AM" and hour == 12:
+        hour = 0
+    return hour, minute
 
-# Helper function to extract initial time from a list of datetime ranges
 def extract_initial_time(datetime_list):
     result = []
     for dt, time_range in datetime_list:
@@ -108,47 +64,35 @@ def extract_initial_time(datetime_list):
         result.append(localized_dt)
     return result
 
-# Google Calendar upload function
 def upload_to_google_calendar(event_times, name):
-    SCOPES = ["https://www.googleapis.com/auth/calendar"]
-    creds = None
-    
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
+    creds_path = os.path.expanduser("/home/brian/Documents/BrainBot/brainbot-435923-912b44082a6f.json")
+    creds = service_account.Credentials.from_service_account_file(creds_path, scopes=SCOPES)
 
     try:
         service = build("calendar", "v3", credentials=creds)
+
+        cal_id = "primary" if name == "Work" else \
+            '24bc1af315ebd0c137d1172c5dba504e0f9bc6f6236d833b7c432b19c26dc909@group.calendar.google.com'
+
         existing_events = service.events().list(
-            calendarId='primary', timeMin=datetime.datetime.utcnow().isoformat() + 'Z', 
-            timeMax=(datetime.datetime.utcnow() + datetime.timedelta(days=365)).isoformat() + 'Z', 
-            singleEvents=True, orderBy='startTime'
+            calendarId=cal_id,
+            timeMin=datetime.datetime.utcnow().isoformat() + 'Z',
+            timeMax=(datetime.datetime.utcnow() + datetime.timedelta(days=365)).isoformat() + 'Z',
+            singleEvents=True,
+            orderBy='startTime'
         ).execute()
 
-        existing_event_times = set()
-        for event in existing_events.get('items', []):
-            event_start = event['start']['dateTime']
-            event_start_dt = datetime.datetime.fromisoformat(event_start).astimezone(vancouver_tz)
-            existing_event_times.add(event_start_dt)
+        existing_event_times = set(
+            datetime.datetime.fromisoformat(event['start']['dateTime']).astimezone(vancouver_tz)
+            for event in existing_events.get('items', [])
+            if 'dateTime' in event['start']
+        )
 
-        # Avoid adding duplicate events
         for event_start_time in event_times:
             if event_start_time not in existing_event_times:
-                # Calculate the initial end time (8 hours after start)
                 event_end_time = event_start_time + datetime.timedelta(hours=8)
-
-                # Check if the event spans past midnight
-                # If the event ends after midnight, cut it off at midnight
                 if event_end_time.date() > event_start_time.date():
-                    event_end_time = event_start_time.replace(hour=23, minute=59, second=59, microsecond=0)
+                    event_end_time = event_start_time.replace(hour=23, minute=59, second=59)
 
                 event = {
                     'summary': remove_end_star(name),
@@ -161,123 +105,86 @@ def upload_to_google_calendar(event_times, name):
                         'dateTime': event_end_time.isoformat(),
                         'timeZone': 'America/Vancouver',
                     },
-                    'colorId': color_codes[name]
+                    'colorId': color_codes.get(name, 1)
                 }
 
-                # If the event name is "Work", add reminders (notifications)
                 if name == "Work":
                     event['reminders'] = {
                         'useDefault': False,
                         'overrides': [
-                            {'method': 'popup', 'minutes': 24 * 60},  # 1 day before
-                            {'method': 'popup', 'minutes': 60},      # 1 hour before
+                            {'method': 'popup', 'minutes': 1440},
+                            {'method': 'popup', 'minutes': 60},
                         ]
                     }
-                    # Create event with notifications for "Work"
-                    cal_id = "primary"
-                else:
-                    # No reminders for other events
-                    cal_id = '24bc1af315ebd0c137d1172c5dba504e0f9bc6f6236d833b7c432b19c26dc909@group.calendar.google.com'
-                    
-                # Create the event (with or without reminders based on the event name)
-                event = service.events().insert(calendarId=cal_id, body=event).execute()
-                print(f"Event created: {event.get('htmlLink')}")
-            else:
-                print(f"Event already exists: {event_start_time.isoformat()}")
+
+                service.events().insert(calendarId=cal_id, body=event).execute()
+
     except HttpError as error:
-        print(f"An error occurred: {error}")
+        raise Exception(f"Google API error: {error}")
 
 class WorkScheduler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @slash_command(name='upload', description="Uploads work schedule onto Google calendar", guild_ids=[928169465475133440])
-    @option(
-    "attachment",
-    discord.Attachment,
-    description="A file to attach to the message",
-    required=False,  # The default value will be None if the user doesn't provide a file.
-)
-    async def upload(self, ctx, attachment:discord.Attachment, name="Brian"):
-        if attachment:
-            # Responding with the file URL
-            await ctx.defer()
+    @slash_command(name='upload', description="Uploads work schedule to Google Calendar", guild_ids=[928169465475133440])
+    @option("attachment", discord.Attachment, description="Excel file (.xlsx)", required=False)
+    async def upload(self, ctx, attachment: discord.Attachment):
+        if not attachment:
+            await ctx.respond("You didn't give me a file to upload! :sob:")
+            return
+
+        await ctx.defer()
+
+        try:
             response = requests.get(attachment.url)
             with open('schedule.xlsx', 'wb') as f:
                 f.write(response.content)
-            if name != "Brian":
-                for name in names:
-                    # Step 1: Read the Excel file, skipping the first 2 rows
-                    sched = pd.read_excel('schedule.xlsx', skiprows=2)
 
-                    # Step 2: Drop the first three columns
-                    sched = sched.iloc[:, 3:]
+            TIME_RANGE_PATTERN = re.compile(r"^\d{1,2}(:\d{2})?(AM|PM)\s*-\s*\d{1,2}(:\d{2})?(AM|PM)$", re.IGNORECASE)
+            SKIP_VALUES = {"-", "OFF", "N/A", "AM ONLY"}
+            SKIP_KEYWORDS = ["REQ", "NO"]
 
-                    # Step 3: Remove empty columns
-                    sched = sched.dropna(axis=1, how='all')
-
-                    # Step 4: Drop the first row
-                    sched = sched.iloc[1:].reset_index(drop=True)
-
-                    # Convert column names from numeric format to dates
-                    columns = sched.columns[1:].tolist()
-                    sched.columns = ['Name'] + columns
-
-                    # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
-                    sched_filtered = sched[sched['Name'].str.strip().str.lower() == person_name.lower()]
-                    tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
-                    times = list(tuples[0][1:-1])
-
-                    # Extract working times from the schedule
-                    working_times = []
-                    for i in times:
-                        if i[1] == '-' or "REQ" in i[1] or "No" in i[1] or "OFF" in i[1]:
-                            continue
-                        else:
-                            working_times.append((i[0], i[1]))
-
-                    # Extract initial times in the correct time zone
-                    event_times = extract_initial_time(working_times)
-                    # Upload the events to Google Calendar
-                    upload_to_google_calendar(event_times, name)
-            else:
-                # Step 1: Read the Excel file, skipping the first 2 rows
-                sched = pd.read_excel('schedule.xlsx', skiprows=2)
-
-                # Step 2: Drop the first three columns
-                sched = sched.iloc[:, 3:]
-
-                # Step 3: Remove empty columns
-                sched = sched.dropna(axis=1, how='all')
-
-                # Step 4: Drop the first row
+            for name in names:
+                sched = pd.read_excel('schedule.xlsx', engine='openpyxl', skiprows=2)
+                sched = sched.iloc[:, 3:].dropna(axis=1, how='all')
                 sched = sched.iloc[1:].reset_index(drop=True)
+                sched.columns = ['Name'] + sched.columns[1:].tolist()
 
-                # Convert column names from numeric format to dates
-                columns = sched.columns[1:].tolist()
-                sched.columns = ['Name'] + columns
+                row = sched[sched['Name'].str.strip().str.lower() == name.lower()]
+                if row.empty:
+                    await ctx.send(f"⚠️ No schedule found for {name}")
+                    continue
 
-                # Step 5: Filter rows where 'Name' contains 'BRIAN' (case insensitive)
-                sched_filtered = sched[sched['Name'].str.contains('Brian', case=False, na=False)]
-                tuples = [tuple(zip(sched_filtered.columns, row)) for row in sched_filtered.values]
-                times = list(tuples[0][1:-1])
-
-                    # Extract working times from the schedule
+                row_values = list(row.values[0])[1:]
                 working_times = []
-                for i in times:
-                    if i[1] == '-' or "REQ" in i[1] or "No" in i[1] or "OFF" in i[1]:
+                for day, val in zip(sched.columns[1:], row_values):
+                    val_str = str(val).strip().upper()
+                    if (
+                        not val_str or
+                        val_str in SKIP_VALUES or
+                        any(keyword in val_str for keyword in SKIP_KEYWORDS) or
+                        not TIME_RANGE_PATTERN.match(val_str)
+                    ):
                         continue
-                    else:
-                        working_times.append((i[0], i[1]))
+                    working_times.append((day, val_str))
 
-                    # Extract initial times in the correct time zone
                 event_times = extract_initial_time(working_times)
-                upload_to_google_calendar(event_times, "Work")
-            await ctx.respond(f"Received your file: {attachment.url}")
 
-        else:
-            await ctx.respond("You didn't give me a file to upload! :sob:")
+                try:
+                    upload_to_google_calendar(event_times, name)
+                except Exception as e:
+                    url = str(e)
+                    if url.startswith("https://accounts.google.com/"):
+                        await ctx.respond(f"🔑 Please authenticate here: {url}\nThen return to Discord after authorizing.")
+                        return
+                    else:
+                        raise e
 
+            await ctx.respond(f"✅ Schedule uploaded successfully from file: `{attachment.filename}`")
+
+        except Exception as e:
+            print(traceback.format_exc())
+            await ctx.respond(f"❌ An error occurred:\n```\n{str(e)}\n```")
 
 def setup(bot):
     bot.add_cog(WorkScheduler(bot))
