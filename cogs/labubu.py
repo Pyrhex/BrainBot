@@ -13,6 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 class Labubu(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -23,36 +25,46 @@ class Labubu(commands.Cog):
     @tasks.loop(minutes=1)
     async def reminders(self):
         chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Runs Chrome in headless mode
-        chrome_options.add_argument("--no-sandbox")  # Prevents sandboxing issues
-        chrome_options.add_argument("--disable-dev-shm-usage")  # Overcomes limited resource issues in Docker or virtual environments
-        chrome_options.add_argument("--remote-debugging-port=9222")  # Open remote debugging port for Chrome
-        chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (needed for headless mode on some systems)
+        chrome_options.add_argument("--headless=new")  # use new mode if possible
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument(
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        )
 
-        # Initialize the WebDriver with the specified options
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-        # Open the webpage
-        try:
-            driver.get("https://www.popmart.com/ca/products/2710/THE-MONSTERS-Big-into-Energy-Series-Vinyl-Plush-Pendant-Blind-Box")  # Replace with the actual URL of the page
-
-        # Wait for the page to load (optional, you can adjust the time as needed)
-            driver.implicitly_wait(10)  # Waits for up to 10 seconds
-        except Exception as e:
-            print("Unable to load page, will try again in 1 minute")
+        url = "https://www.popmart.com/ca/pop-now/set/292"
+        in_stock_xpath = "//button[span[text()='Pick One to Shake']]"
 
         try:
-            # Locate the "ADD TO BAG" button using different locators:
-            add_to_bag_button = driver.find_element(By.XPATH, "//*[text()='NOTIFY ME WHEN AVAILABLE']")
-            now = datetime.datetime.now()
-            print(f"OUT OF STOCK AS OF {now}")
-        except Exception as e:
-            channel = self.bot.get_channel(1338405956270428220)
-            embed = discord.Embed(description=f"Item has been restocked")
-            await channel.send(embed=embed)
+            driver.get(url)
 
-        # Close the WebDriver after actions are complete
-        driver.quit()
+            try:
+                WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.XPATH, "//button[span[text()='Pick One to Shake']]")))
+                # Now take screenshot (this will be after JS has rendered)
+                # success = driver.save_screenshot("/tmp/debug_after_render.png")
+                # print("Screenshot saved:", success)
+
+                channel = self.bot.get_channel(1387286472029241354)
+                embed = discord.Embed(description="🟢 **Restock Alert!** The item is now available.")
+                await channel.send(embed=embed)
+
+            except Exception as e:
+                now = datetime.datetime.now()
+                formatted_time = now.strftime("%Y-%m-%d %I:%M %p")
+                channel = self.bot.get_channel(1387199146762703042)
+                embed = discord.Embed(description=f"[{formatted_time}] Still OUT OF STOCK.")
+                await channel.send(embed=embed)
+
+        except Exception as e:
+            print("❌ Page load or check failed:", e)
+
+        finally:
+            driver.quit()
     @reminders.before_loop
     async def before_reminder(self):
         print(f'Starting up Popmart alerts')
